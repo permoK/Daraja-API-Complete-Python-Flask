@@ -4,8 +4,6 @@ This is a simple implementation of Daraja API in Flask
 On every Resource consumption, check the details that need to be edited to
 reflect your iwn test credentials.
 
-* If you like this code sample, don't forget to star it here in Github
-Video Tutorials link: https://www.youtube.com/playlist?list=PLcKuwRUZRXZKfB0-5idYOo8JQKKLq_Kz-
 '''
 
 from flask import Flask, request
@@ -15,11 +13,13 @@ import json
 from datetime import datetime
 import base64
 
+import uuid
+
 app = Flask(__name__)
 
 base_url = ''
-consumer_key = ''
-consumer_secret = ''
+key = ''
+secret = ''
 
 
 @app.route('/')
@@ -28,8 +28,8 @@ def home():
 
 @app.route('/access_token')
 def get_access_token():
-    consumer_key = consumer_key
-    consumer_secret = consumer_secret
+    consumer_key = key
+    consumer_secret = secret
     endpoint = 'https://sandbox.safaricom.co.ke/oauth/v1/generate?grant_type=client_credentials'
 
     r = requests.get(endpoint, auth=HTTPBasicAuth(consumer_key, consumer_secret))
@@ -61,10 +61,10 @@ def test_payment():
 
     data_s = {
         "Amount": 100,
-        "ShortCode": "600383",
+        "ShortCode": "174379",
         "BillRefNumber": "test",
         "CommandID": "CustomerPayBillOnline",
-        "Msisdn": "254708374149"
+        "Msisdn": "254714025354"
     }
 
     res = requests.post(endpoint, json= data_s, headers = headers)
@@ -72,18 +72,19 @@ def test_payment():
 
 @app.route('/b2c')
 def make_payment():
-    endpoint = 'https://sandbox.safaricom.co.ke/mpesa/b2c/v1/paymentrequest'
+    endpoint = 'https://sandbox.safaricom.co.ke/mpesa/b2c/v3/paymentrequest'
     access_token = _access_token()
     headers = { "Authorization": "Bearer %s" % access_token }
     my_endpoint = base_url + "/b2c/"
 
     data = {
-        "InitiatorName": "apitest342",
-        "SecurityCredential": "SQFrXJpsdlADCsa986yt5KIVhkskagK+1UGBnfSu4Gp26eFRLM2eyNZeNvsqQhY9yHfNECES3xyxOWK/mG57Xsiw9skCI9egn5RvrzHOaijfe3VxVjA7S0+YYluzFpF6OO7Cw9qxiIlynYS0zI3NWv2F8HxJHj81y2Ix9WodKmCw68BT8KDge4OUMVo3BDN2XVv794T6J82t3/hPwkIRyJ1o5wC2teSQTgob1lDBXI5AwgbifDKe/7Y3p2nn7KCebNmRVwnsVwtcjgFs78+2wDtHF2HVwZBedmbnm7j09JO9cK8glTikiz6H7v0vcQO19HcyDw62psJcV2c4HDncWw==",
+        "OriginatorConversationID": uuid.uuid4().hex,
+        "InitiatorName": "testapi",
+        "SecurityCredential": "d++95U0ItaW985ABjd+n0b49es9AdXnC4v7vfztnx6/sbdbuxoq9Zqmv85RfL0CriEr62lUC11lgLxKjtSQGFD1DWJ50Vkecto6LNgjJTFH9KmSKKVEi0Ix2RiKKMdCAZydDLsQ1vSnGjgyg8CWhe2GpoVCm9OBu8jlmaVNBCZ/pQ/UmbSct8WsnT8CU4u4gV/v+Egx8s9cxI5CdJOJHy7QjCR4VZK/DX0tn7wOK86+ZZ7K+EVIPi0PfkbYw/QxByiphk27pPF1xFoHHBX46HEugSaXMm83K2SW7dMy7yxXjHefDi6KFgsMCUJxUhu0H43indXRGvLP5jRiWaWJJuA==",
         "CommandID": "BusinessPayment",
         "Amount": "200",
         "PartyA": "601342",
-        "PartyB": "254708374149",
+        "PartyB": "254714025354",
         "Remarks": "Pay Salary",
         "QueueTimeOutURL": my_endpoint + "timeout",
         "ResultURL": my_endpoint + "result",
@@ -97,28 +98,27 @@ def make_payment():
 def init_stk():
     endpoint = 'https://sandbox.safaricom.co.ke/mpesa/stkpush/v1/processrequest'
     access_token = _access_token()
-    headers = { "Authorization": "Bearer %s" % access_token }
+    headers = { "Authorization": f"Bearer {access_token}" }
     my_endpoint = base_url + "/lnmo"
     Timestamp = datetime.now()
     times = Timestamp.strftime("%Y%m%d%H%M%S")
     password = "174379" + "bfb279f9aa9bdbcf158e97dd71a467cd2e0c893059b10f78e6b72ada1ed2c919" + times
-    datapass = base64.b64encode(password.encode('utf-8'))
-
+    datapass = base64.b64encode(password.encode('utf-8')).decode('utf-8')  # Decode to string
+    print(datapass)
     data = {
         "BusinessShortCode": "174379",
         "Password": datapass,
         "Timestamp": times,
         "TransactionType": "CustomerPayBillOnline",
-        "PartyA": "", # fill with your phone number
+        "PartyA": "254714025354", # fill with your phone number
         "PartyB": "174379",
-        "PhoneNumber": "", # fill with your phone number
+        "PhoneNumber": "254714025354", # fill with your phone number
         "CallBackURL": my_endpoint,
         "AccountReference": "TestPay",
         "TransactionDesc": "HelloTest",
-        "Amount": 2
+        "Amount": 1
     }
-
-    res = requests.post(endpoint, json = data, headers = headers)
+    res = requests.post(endpoint, json=data, headers=headers)
     return res.json()
 
 @app.route('/lnmo', methods=['POST'])
@@ -158,8 +158,8 @@ def confirm():
 
 
 def _access_token():
-    consumer_key = consumer_key
-    consumer_secret = consumer_secret
+    consumer_key = key
+    consumer_secret = secret
     endpoint = 'https://sandbox.safaricom.co.ke/oauth/v1/generate?grant_type=client_credentials'
 
     r = requests.get(endpoint, auth=HTTPBasicAuth(consumer_key, consumer_secret))

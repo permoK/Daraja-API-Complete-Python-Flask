@@ -1,11 +1,3 @@
-'''
-This is a simple implementation of Daraja API in Flask
-
-On every Resource consumption, check the details that need to be edited to
-reflect your iwn test credentials.
-
-'''
-
 from flask import Flask, request
 import requests
 from requests.auth import HTTPBasicAuth
@@ -63,7 +55,7 @@ def test_payment():
         "Amount": 100,
         "ShortCode": "174379",
         "BillRefNumber": "test",
-        "CommandID": "CustomerPayBillOnline",
+        "CommandID": "CustomerBuyGoodsOnline", # for paybill - CustomerPayBillOnline
         "Msisdn": "254714025354"
     }
 
@@ -72,7 +64,7 @@ def test_payment():
 
 @app.route('/b2c')
 def make_payment():
-    endpoint = 'https://sandbox.safaricom.co.ke/mpesa/b2c/v3/paymentrequest'
+    endpoint = 'https://sandbox.safaricom.co.ke/mpesa/b2c/v1/paymentrequest'
     access_token = _access_token()
     headers = { "Authorization": "Bearer %s" % access_token }
     my_endpoint = base_url + "/b2c/"
@@ -96,30 +88,41 @@ def make_payment():
 
 @app.route('/lnmo')
 def init_stk():
+    phone = request.args.get('phone')
+    amount = request.args.get('amount')
+
     endpoint = 'https://sandbox.safaricom.co.ke/mpesa/stkpush/v1/processrequest'
     access_token = _access_token()
     headers = { "Authorization": f"Bearer {access_token}" }
-    my_endpoint = base_url + "/lnmo"
+    my_endpoint = base_url 
     Timestamp = datetime.now()
     times = Timestamp.strftime("%Y%m%d%H%M%S")
     password = "174379" + "bfb279f9aa9bdbcf158e97dd71a467cd2e0c893059b10f78e6b72ada1ed2c919" + times
     datapass = base64.b64encode(password.encode('utf-8')).decode('utf-8')  # Decode to string
-    print(datapass)
+    # print(datapass)
+
     data = {
         "BusinessShortCode": "174379",
         "Password": datapass,
         "Timestamp": times,
-        "TransactionType": "CustomerPayBillOnline",
-        "PartyA": "254714025354", # fill with your phone number
+        "TransactionType": "CustomerBuyGoodsOnline", # for paybill - CustomerPayBillOnline
+        "PartyA": phone,
         "PartyB": "174379",
-        "PhoneNumber": "254714025354", # fill with your phone number
-        "CallBackURL": my_endpoint,
+        "PhoneNumber": phone, # fill with your phone number
+        "CallBackURL": my_endpoint + "/lnmo-callback",
         "AccountReference": "TestPay",
         "TransactionDesc": "HelloTest",
-        "Amount": 1
+        "Amount": amount
     }
     res = requests.post(endpoint, json=data, headers=headers)
     return res.json()
+
+# consume mpesa express CallBack
+@app.route('/lnmo-callback', methods=['POST'])
+def incoming():
+    data = request.get_json()
+    print(data)
+    return "ok"
 
 @app.route('/lnmo', methods=['POST'])
 def lnmo_result():
@@ -127,6 +130,7 @@ def lnmo_result():
     f = open('lnmo.json', 'a')
     f.write(data)
     f.close()
+
 
 @app.route('/b2c/result', methods=['POST'])
 def result_b2c():

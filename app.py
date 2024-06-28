@@ -124,6 +124,27 @@ def incoming():
     print(data)
     return "ok"
 
+@app.route('/accountbalance')
+def accountbalance():
+    endpoint = 'https://sandbox.safaricom.co.ke/mpesa/accountbalance/v1/query'
+    access_token = _access_token()
+    headers = { "Authorization": f"Bearer {access_token}" }
+    my_endpoint = base_url 
+    data = {
+            "Initiator": "testapi",
+            "SecurityCredential": "kX8RdueVygcnpQTdOTBb61PMBCMJrOt/kuKoB0iFDDqp1WR9AIh+0e5Ce1DjrYOTSAwTYG6BtJxQWJyVXwd/Lko+Lmnw3Rbrl4/IIz/vwSEK0Zvk3ouGpN16r54lqTKVvk/fC8oA+Kcmerc+mJcbt8fa04ITVQ56Q2pOrls3XS7pVsR1NZe3o4mbSbg0Shs3eSIMPPtdJfNxwz5L877DrXfR4T6mJXL9Yo01Of3vtohFM5wF23GI6KIdgLj89hYLSpMbKooeZv+aPCIMptG6/vKGZZWI6tMQSeNN53OOWU1WavJvDKHSiu818v5SBI2fWHqToZTXjWAj55GlXJBuaA==",
+            "CommandID": "AccountBalance",
+            "PartyA": 600977,
+            "IdentifierType": "2",
+            "Remarks": "no test",
+            "QueueTimeOutURL": "https://mydomain.com/AccountBalance/queue/",
+            "ResultURL": my_endpoint + "/lnmo-callback",
+
+            }
+    res = requests.post(endpoint, json=data, headers=headers)
+    return res.json()
+
+
 @app.route('/lnmo', methods=['POST'])
 def lnmo_result():
     data = request.get_data()

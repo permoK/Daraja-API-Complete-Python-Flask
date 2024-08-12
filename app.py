@@ -9,9 +9,9 @@ import uuid
 
 app = Flask(__name__)
 
-base_url = ''
-key = ''
-secret = ''
+base_url = 'https://monadoll.tech/'
+key = 'nAbuuqCD0dMH3uhXSO5A2yY7rd1HACYE'
+secret = '3ZnvWnVqFqPgvUXF'
 
 
 @app.route('/')
@@ -67,7 +67,8 @@ def make_payment():
     endpoint = 'https://sandbox.safaricom.co.ke/mpesa/b2c/v1/paymentrequest'
     access_token = _access_token()
     headers = { "Authorization": "Bearer %s" % access_token }
-    my_endpoint = base_url + "/b2c/"
+    # my_endpoint = base_url + "/b2c/"
+    my_endpoint = base_url
 
     data = {
         "OriginatorConversationID": uuid.uuid4().hex,
@@ -79,17 +80,17 @@ def make_payment():
         "PartyB": "254714025354",
         "Remarks": "Pay Salary",
         "QueueTimeOutURL": my_endpoint + "timeout",
-        "ResultURL": my_endpoint + "result",
+        "ResultURL": my_endpoint + "/mpesa-express-callback",
         "Occasion": "Salary"
     }
 
     res = requests.post(endpoint, json = data, headers = headers)
     return res.json()
 
-@app.route('/lnmo')
+@app.route('/mpesa-express')
 def init_stk():
-    phone = request.args.get('phone')
-    amount = request.args.get('amount')
+    phone = 254714025354
+    amount = 1
 
     endpoint = 'https://sandbox.safaricom.co.ke/mpesa/stkpush/v1/processrequest'
     access_token = _access_token()
@@ -105,11 +106,11 @@ def init_stk():
         "BusinessShortCode": "174379",
         "Password": datapass,
         "Timestamp": times,
-        "TransactionType": "CustomerBuyGoodsOnline", # for paybill - CustomerPayBillOnline
+        "TransactionType": "CustomerPayBillOnline", # for paybill - CustomerPayBillOnline
         "PartyA": phone,
         "PartyB": "174379",
         "PhoneNumber": phone, # fill with your phone number
-        "CallBackURL": my_endpoint + "/lnmo-callback",
+        "CallBackURL": my_endpoint + "/callback",
         "AccountReference": "TestPay",
         "TransactionDesc": "HelloTest",
         "Amount": amount
@@ -118,10 +119,14 @@ def init_stk():
     return res.json()
 
 # consume mpesa express CallBack
-@app.route('/lnmo-callback', methods=['POST'])
+@app.route('/mpesa-express-callback', methods=['POST'])
 def incoming():
     data = request.get_json()
     print(data)
+    result_code = data['Result']['ResultCode']
+    result_desc = data['Result']['ResultDesc']
+    print(result_code)
+    print(result_desc)
     return "ok"
 
 @app.route('/accountbalance')
@@ -138,17 +143,17 @@ def accountbalance():
             "IdentifierType": "2",
             "Remarks": "no test",
             "QueueTimeOutURL": "https://mydomain.com/AccountBalance/queue/",
-            "ResultURL": my_endpoint + "/lnmo-callback",
+            "ResultURL": my_endpoint + "/callback",
 
             }
     res = requests.post(endpoint, json=data, headers=headers)
     return res.json()
 
 
-@app.route('/lnmo', methods=['POST'])
+@app.route('/mpesa-express', methods=['POST'])
 def lnmo_result():
     data = request.get_data()
-    f = open('lnmo.json', 'a')
+    f = open('mpesa-express.json', 'a')
     f.write(data)
     f.close()
 
@@ -193,4 +198,4 @@ def _access_token():
 
 
 if __name__ == "__main__":
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    app.run(host='0.0.0.0', port=5200, debug=True)
